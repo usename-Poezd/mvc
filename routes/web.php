@@ -1,5 +1,5 @@
 <?php
 use App\Routing\Router;
 
-Router::post("/", [\Controllers\HomeController::class, "indexAction"]);
+Router::get("/", [\Controllers\HomeController::class, "indexAction"]);
 

@@ -2,11 +2,15 @@
 namespace Controllers;
 
 use App\Routing\Request;
+use App\Routing\Response;
 
 class HomeController
 {
     public function indexAction(Request $request)
     {
-        echo $request->getUrl();
+        return new Response(
+            [
+                "ok" => true
+            ]);
     }
 }

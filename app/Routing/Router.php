@@ -2,6 +2,7 @@
 namespace App\Routing;
 
 use App\Contracts\Router as RouterBase;
+use App\Exceptions\ResourceNotFoundException;
 use Exception;
 
 class Router implements RouterBase
@@ -26,11 +27,25 @@ class Router implements RouterBase
         throw new Exception("Cannot unserialize singleton");
     }
 
+    public function init(string $root, array $options): Response
+    {
+        $this->initRoutes($root . $options["defaultRoutesPath"]);
 
-    protected function getRoutingFiles(string $root, string $dir): array
+
+        return $this->handle(Request::get());
+    }
+
+    protected function initRoutes($path)
+    {
+        $files = $this->getRoutingFiles($path);
+        foreach ($files as $file) {
+            require_once $path . $file;
+        }
+    }
+    protected function getRoutingFiles($path): array
     {
         $fileNames = [];
-        $d = dir( $root . $dir) or die($php_errormsg);
+        $d = dir( $path) or die($php_errormsg);
         while (false !== ($f = $d->read())) {
             if (preg_match('/^[a-zA-Z]+.php$/',$f)) {
                 $fileNames[] = "/".$f;
@@ -40,17 +55,17 @@ class Router implements RouterBase
         return $fileNames;
     }
 
-    public function init(string $root, array $options)
-    {
-        $files = $this->getRoutingFiles($root, $options["defaultRoutesPath"]);
-        foreach ($files as $file) {
-            require_once $root . $options["defaultRoutesPath"] . $file;
+    protected function handle(Request $request): Response {
+        $route = $this->routes[$request->getUrl()][$request->getMethod()] ?? null;
+        if (!isset($route)) {
+            throw new ResourceNotFoundException("Resource not found");
         }
 
+        $controller = $route["controller"];
+        $action = $route["action"];
 
-        $this->handle(Request::get());
+        return (new $controller())->$action($request);
     }
-
 
 
     public static function get(string $route, array $action)
@@ -69,17 +84,5 @@ class Router implements RouterBase
             "controller" => $action[0],
             "action"    => $action[1],
         ];
-    }
-
-    protected function handle(Request $request) {
-        $route = $this->routes[$request->getUrl()][$request->getMethod()] ?? null;
-        if (!isset($route)) {
-            throw new Exception("PIZDEC 404");
-        }
-
-        $controller = $route["controller"];
-        $action = $route["action"];
-
-        (new $controller())->$action($request);
     }
 }
