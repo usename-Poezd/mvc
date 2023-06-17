@@ -17,7 +17,7 @@ class Request
     {
         $this->url = explode("?", $uri)[0];
 
-        // Recommended
+        // Parse query string
         $query = [];
         parse_str($_SERVER["QUERY_STRING"], $query);
         $this->query = $query;
