@@ -8,7 +8,6 @@ use Exception;
 class Router implements RouterBase
 {
     private static ?Router $instance = null;
-    protected array $routes = [];
 
     public static function getInstance(): Router
     {
@@ -27,44 +26,56 @@ class Router implements RouterBase
         throw new Exception("Cannot unserialize singleton");
     }
 
-    public function init(string $root, array $options): Response
-    {
-        $this->initRoutes($root . $options["defaultRoutesPath"]);
+    /** @var $routes array<\App\Contracts\Route>*/
+    protected array $routes = [];
 
+    public function handle(Request $request): \App\Contracts\Route {
 
-        return $this->handle(Request::get());
-    }
-
-    protected function initRoutes($path)
-    {
-        $files = $this->getRoutingFiles($path);
-        foreach ($files as $file) {
-            require_once $path . $file;
-        }
-    }
-    protected function getRoutingFiles($path): array
-    {
-        $fileNames = [];
-        $d = dir( $path) or die($php_errormsg);
-        while (false !== ($f = $d->read())) {
-            if (preg_match('/^[a-zA-Z]+.php$/',$f)) {
-                $fileNames[] = "/".$f;
-            }
-        }
-        $d->close();
-        return $fileNames;
-    }
-
-    protected function handle(Request $request): Response {
-        $route = $this->routes[$request->getUrl()][$request->getMethod()] ?? null;
+        $route = $this->matchRoute($request);
         if (!isset($route)) {
             throw new ResourceNotFoundException("Resource not found");
         }
 
-        $controller = $route["controller"];
-        $action = $route["action"];
+        return $route;
+    }
 
-        return (new $controller())->$action($request);
+    /*
+     *  Перебрать занчения мэтча по аргументам, записать в arguments.
+     *  далее сравнить кол-во параметров и кол-во мэтчей в ОСНОВНОЙ РЕГУЛЯРКЕ (сравниваем роут с url)
+     *  после этого записывать в params[$argument] = $ОСНОВНОЙ МЕТЧ[ключ]
+     *  inspire: https://github.com/dannyvankooten/PHP-Router/blob/dfd121cffc435e7d5483c9bfeef0f8ed25afee19/src/Router.php#L117
+    */
+    protected function matchRoute(Request $request): ?\App\Contracts\Route
+    {
+        foreach ($this->routes as  $route) {
+            // replace first "/" from url
+            $reqUrl =  preg_replace("/(^\/)|(\/$)/","",  $request->getUrl());
+
+            $argument_names = $route->getArguments();
+
+            // array of matched params
+            $matched = [];
+            if (!preg_match($route->getRegex(), $reqUrl, $matched)) {
+                continue;
+            };
+            // delete first element of array because it's url
+            array_splice($matched, 0, 1);
+
+            if (count($argument_names) !== count($matched)) {
+                continue;
+            }
+
+            // params array
+            $params = [];
+            foreach ($argument_names as $k => $argument) {
+                $params[$argument] = $matched[$k];
+            }
+            $request->setParams($params);
+
+            return $route;
+        }
+
+        return null;
     }
 
 
@@ -80,9 +91,6 @@ class Router implements RouterBase
 
     protected function register($method, $route, $action)
     {
-        $this->routes[$route][$method] = [
-            "controller" => $action[0],
-            "action"    => $action[1],
-        ];
+        $this->routes[] = new Route($method, $route, $action[0], $action[1]);
     }
 }
