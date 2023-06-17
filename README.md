@@ -1,22 +1,29 @@
-# My MVC pattern with NO LIBS
+# ⚙️ My MVC pattern with NO LIBS ⚙️
 
-## Project struct
+## 🚧 Project struct
  ~~~
 root/
-├── app/ 
-│   ├── Contracts/   
-│   └── Routing/
-├── docker/
-│   └── nginx/
-│       └── conf.d/
-├── public/
-├── routes/
-├── src/ 
-    └── Controllers/ 
+├── app
+│   ├── Contracts
+│   ├── Core
+│   ├── Exceptions
+│   └── Routing
+├── assets
+│   └── views
+│       └── home
+├── docker
+│   └── nginx
+│       └── conf.d
+├── public
+├── routes
+└── src
+    └── Controllers
  ~~~   
 
 ### app/
 Project core. It loads the service settings, initializes the framework, and searches for the required controller.
+### assets/
+Folder for any front-end stuff and views
 ### docker/
 Folder for configs of docker containers
 ### public/
