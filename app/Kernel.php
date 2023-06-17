@@ -2,7 +2,9 @@
 namespace App;
 use App\Contracts\Response;
 use App\Exceptions\ResourceNotFoundException;
+use App\Routing\Request;
 use App\Routing\Router;
+use Exception;
 
 class Kernel
 {
@@ -30,13 +32,42 @@ class Kernel
     }
 
     public function run($root) {
-        $this->renderResponse($this->handle($root));
+        $this->initRoutes($root . $this->routerOptions["defaultRoutesPath"]);
+        $this->renderResponse(
+            $this->handle(Request::get())
+        );
     }
 
-    protected function handle($root) {
+    protected function initRoutes($path): void
+    {
+        $files = $this->getRoutingFiles($path);
+        foreach ($files as $file) {
+            require_once $path . $file;
+        }
+    }
+
+    protected function getRoutingFiles($path): array
+    {
+        $fileNames = [];
+        $d = dir($path) or die($php_errormsg);
+        while (false !== ($f = $d->read())) {
+            if (preg_match('/^[a-zA-Z]+.php$/',$f)) {
+                $fileNames[] = "/".$f;
+            }
+        }
+        $d->close();
+        return $fileNames;
+    }
+
+    protected function handle(Request $request): Response {
         try {
-            return Router::getInstance()
-                ->init($root, $this->routerOptions);
+            $route = Router::getInstance()
+                ->handle($request);
+
+            $controller = $route->getController();
+            $action = $route->getAction();
+
+            return (new $controller())->$action($request);
         } catch (ResourceNotFoundException $e) {
             return new \App\Routing\Response([
                 "ok" => false,
