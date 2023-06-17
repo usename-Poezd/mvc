@@ -1,16 +1,13 @@
 <?php
 namespace Controllers;
 
+use App\Core\View;
 use App\Routing\Request;
-use App\Routing\Response;
 
 class HomeController
 {
     public function indexAction(Request $request)
     {
-        return new Response(
-            [
-                "ok" => true
-            ]);
+        return new View("home.index", ['test' => "Test string from controller: " . self::class]);
     }
 }
