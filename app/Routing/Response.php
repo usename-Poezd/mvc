@@ -11,7 +11,12 @@ class Response implements Base
         protected array $options = [
             "Content-Type" => "application/json;charset=utf-8"
         ],
-    ){}
+    )
+    {
+        if (!is_array($this->data)) {
+            $this->options["Content-Type"] = "text/html;charset=utf-8";
+        }
+    }
 
     /**
      * @return array
