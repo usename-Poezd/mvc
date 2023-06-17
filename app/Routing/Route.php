@@ -28,8 +28,11 @@ class Route implements \App\Contracts\Route
 
     public function getRegex(): string
     {
-
-        $regex = preg_replace(self::ARGUMENT_PATTER, "(\w+)", $this->path);
+        $regex = preg_replace(
+            self::ARGUMENT_PATTER,
+            "(\w+)",
+            preg_replace("/(^\/)|(\/$)/","",  $this->path)
+        );
         return "/^" . str_replace("/", "\/", $regex) . "$/m";
     }
 
